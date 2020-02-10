@@ -1,0 +1,115 @@
+---
+title: "Datathon"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+library(tidyr)
+library(dplyr)
+
+df <- read.csv("C:/Users/54236/Desktop/2019-nCoV-cases-JHU-onceaday.csv")
+df <- df[c("Date","Region", "Confirmed", "Deaths", "Recovered")]
+
+df <- df %>% group_by(Region, Date) %>%
+  summarize(Confirmed = sum(Confirmed), 
+            Recovered = sum(Recovered),
+            Deaths = sum(Deaths))%>%ungroup()
+```
+
+
+```{r}
+library(ggplot2)
+
+china <- subset(df, Region=="Mainland China")
+
+ggplot(china, aes(x=Date, y=Confirmed, group = 1)) +
+  geom_point() +
+  geom_line() +
+  ggtitle("Infected people in China") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+
+```{r}
+not_china <- subset(df, Region!="Mainland China")
+not_china <- not_china[c("Date", "Confirmed", "Deaths", "Recovered")]
+
+not_china <- not_china %>% group_by(Date) %>%
+  summarize(Confirmed = sum(Confirmed), 
+            Recovered = sum(Recovered),
+            Deaths = sum(Deaths))%>% ungroup()
+
+ggplot(not_china, aes(x=Date, y=Confirmed, group = 1)) +
+  geom_point() +
+  geom_line() +
+  ggtitle("Infected people in the rest of the world") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r fig.width=10, fig.height=4}
+
+g = ggplot() +
+  geom_point(china, mapping=aes(x=Date, y=Confirmed, group = 1), color="red") +
+  geom_line(china, mapping=aes(x=Date, y=Confirmed, group = 1), color="red") +
+  geom_point(not_china, mapping=aes(x=Date, y=Confirmed, group = 1), color="blue") +
+  geom_line(not_china, mapping=aes(x=Date, y=Confirmed, group = 1), color="blue") +
+  ggtitle("Infected people by Coronavirus") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+jpeg("infected people by Coronavirus")
+print(g)
+```
+
+
+
+
+```{r fig.width=10, fig.height=4}
+library(forcats)
+
+Baidu <- read.csv("C:/Users/54236/Desktop/dataGoogle.csv", sep=";")
+Baidu <- subset(Baidu, Plateform=="Baidu")
+Baidu$Date <- sapply(Baidu$Date, toString)
+Baidu$Date <- as.Date(Baidu$Date, format="%d/%m/%Y")
+
+MaxBaidu <- max(Baidu["Relative.Search.Volicity"])
+Baidu <- Baidu[c("Date", "Relative.Search.Volicity", "Plateform")]
+
+Baidu <- Baidu %>% group_by(Date, Plateform) %>%
+  summarize(Relative.Search.Volicity = Relative.Search.Volicity/MaxBaidu*100)%>% ungroup()
+
+
+
+
+Google <- read.csv("C:/Users/54236/Desktop/dataGoogle.csv", sep=";")
+Google <- subset(Google, Plateform=="Google")
+Google$Date <- sapply(Google$Date, toString)
+Google$Date <- as.Date(Google$Date, format="%d/%m/%Y")
+
+Google <- Google[c("Date", "Relative.Search.Volicity", "Plateform")]
+Google <- Google %>% group_by(Date, Plateform) %>%
+  summarize(Relative.Search.Volicity = mean(Relative.Search.Volicity))%>% ungroup()
+
+
+new_data_search <- rbind(Baidu, Google)
+
+
+jpeg("google")
+g = ggplot(new_data_search, aes(x=Date, y=Relative.Search.Volicity, color=Plateform)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Relative search on the Internet about Coronavirus") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(g)
+
+```
+
+
+
